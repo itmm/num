@@ -65,87 +65,95 @@ static void t_equal_big() {
 }
 
 static void t_add_0_0() {
-    num *v = nm_add(NULL, NULL);
-    assert(v == NULL);
+    num *r = nm_add(NULL, NULL);
+    assert(r == NULL);
 }
 
 static void t_add_100_0() {
-    num *v = nm_create(100);
-    v = nm_add(v, NULL);
-    assert_eq_nm(v, "100");
-    nm_free(v);
+    num *a = nm_create(100);
+    num *r = nm_add(a, NULL);
+    assert_eq_nm(r, "100");
+    nm_free(r);
+    nm_free(a);
 }
 
 static void t_add_0_23() {
-    num *o = nm_create(23);
-    num *v = nm_add(NULL, o);
-    assert_eq_nm(v, "23");
-    nm_free(v);
-    nm_free(o);
+    num *b = nm_create(23);
+    num *r = nm_add(NULL, b);
+    assert_eq_nm(r, "23");
+    nm_free(r);
+    nm_free(b);
 }
 
 static void t_add_100_23() {
-    num *v = nm_create(100);
-    num *o = nm_create(23);
-    v = nm_add(v, o);
-    assert_eq_nm(v, "123");
-    nm_free(v);
-    nm_free(o);
+    num *a = nm_create(100);
+    num *b = nm_create(23);
+    num *r = nm_add(a, b);
+    assert_eq_nm(r, "123");
+    nm_free(r);
+    nm_free(b);
+    nm_free(a);
 }
 
 static void t_add_overflow() {
-    num *v = nm_create(1234567890);
-    num *o = nm_create(2345678901);
-    v = nm_add(v, o);
-    assert_eq_nm(v, "3580246791");
-    nm_free(v);
-    nm_free(o);
+    num *a = nm_create(1234567890);
+    num *b = nm_create(2345678901);
+    num *r = nm_add(a, b);
+    assert_eq_nm(r, "3580246791");
+    nm_free(r);
+    nm_free(b);
+    nm_free(a);
 }
 
 static void t_add_self() {
     num *v = nm_create(987654321);
-    v = nm_add(v, v);
-    assert_eq_nm(v, "1975308642");
+    num *r = nm_add(v, v);
+    assert_eq_nm(r, "1975308642");
+    nm_free(r);
     nm_free(v);
 }
 
 static void t_add_big() {
     num *v = nm_parse("800000000700000000600000000500000000400000000300000000200000000100000000");
-    v = nm_add(v, v);
-    assert_eq_nm(v, "1600000001400000001200000001000000000800000000600000000400000000200000000");
+    num *r = nm_add(v, v);
+    assert_eq_nm(r, "1600000001400000001200000001000000000800000000600000000400000000200000000");
+    nm_free(r);
     nm_free(v);
 }
 
 static void t_sub_small() {
-    num *o = nm_create(34);
-    num *v = nm_create(234);
-    v = nm_sub(v, o);
-    assert_eq_nm(v, "200");
-    nm_free(o);
-    nm_free(v);
+    num *a = nm_create(234);
+    num *b = nm_create(34);
+    num *r = nm_sub(a, b);
+    assert_eq_nm(r, "200");
+    nm_free(r);
+    nm_free(b);
+    nm_free(a);
 }
 
 static void t_sub_carry() {
-    num *o = nm_create(100);
-    num *v = nm_create(1000000000);
-    v = nm_sub(v, o);
-    assert_eq_nm(v, "999999900");
-    nm_free(o);
-    nm_free(v);
+    num *a = nm_create(1000000000);
+    num *b = nm_create(100);
+    num *r = nm_sub(a, b);
+    assert_eq_nm(r, "999999900");
+    nm_free(r);
+    nm_free(b);
+    nm_free(a);
 }
 
 static void t_sub_big() {
     num *v = nm_parse("1800000000700000000600000000500000000400000000300000000200000000100000000");
-    v = nm_sub(v, v);
-    assert(v == NULL);
+    num *r = nm_sub(v, v);
+    assert(r == NULL);
+    nm_free(v);
 }
 
 static void t_mult_simple() {
     num *a = nm_create(123456789);
     num *b = nm_create(100000000);
-    num *c = nm_mult(a, b);
-    assert_eq_nm(c, "12345678900000000");
-    nm_free(c);
+    num *r = nm_mult(a, b);
+    assert_eq_nm(r, "12345678900000000");
+    nm_free(r);
     nm_free(b);
     nm_free(a);
 }

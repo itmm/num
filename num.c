@@ -101,36 +101,32 @@ num *nm_parse(const char *value) {
     return first;
 }
 
-#pragma mark - adding two numbers inplace
 
-num *nm_add(num *res, num *other) {
-    if (!other) { return res; }
+#pragma mark - adding and subtracting
+
+num *nm_add(num *a, num *b) {
+    num *result = NULL;
+    num *last = NULL;;
     
-    num *cur = res;
-    num *lst = NULL;;
-    unsigned mult = 0;
-    while (mult || other) {
-        if (!cur) {
-            cur = _nm_alloc();
-            if (!cur) { return nm_free(res); }
-            if (lst) { lst->next = cur; } else { res = cur; }
-        }
+    unsigned carry = 0;
+    while (carry || a || b) {
+        num *current = _nm_alloc();
+        if (!current) { return nm_free(result); }
+        if (last) { last->next = current; } else { result = current; }
+        last = current;
+        
         for (int i = 0; i < cnt; ++i) {
-            mult += cur->vals[i];
-            if (other) mult += other->vals[i];
-            cur->vals[i] = mult % mod;
-            mult /= mod;
+            if (a) carry += a->vals[i];
+            if (b) carry += b->vals[i];
+            current->vals[i] = carry % mod;
+            carry /= mod;
         }
-        if (other) other = other->next;
-        lst = cur;
-        cur = cur->next;
+        if (a) a = a->next;
+        if (b) b = b->next;
     }
     
-    return res;
+    return result;
 }
-
-
-#pragma mark - subtracting two numbers inplace
 
 static num *_nm_normalize(num *nm) {
     if (!nm) { return NULL; }
@@ -142,31 +138,49 @@ static num *_nm_normalize(num *nm) {
     return nm_free(nm);
 }
 
-num *nm_sub(num *res, num *other) {
-    if (!other) { return NULL; }
+num *nm_sub(num *a, num *b) {
     unsigned carry = 0;
+
+    num *result = NULL;
+    num *last = NULL;
     
-    num *cur = res;
-    while (carry || other) {
-        if (!cur) {
+    while (carry || b) {
+        if (!a) {
             printf("underflow\n");
-            return nm_free(res);
+            return nm_free(result);
         }
+
+        num *current = _nm_alloc();
+        if (!current) { return nm_free(result); }
+        if (last) { last->next = current; } else { result = current; }
+        last = current;
+
         for (int i = 0; i < cnt; ++i) {
-            if (other) carry += other->vals[i];
-            if (carry <= cur->vals[i]) {
-                cur->vals[i] -= carry;
+            if (b) carry += b->vals[i];
+            if (carry <= a->vals[i]) {
+                current->vals[i] = a->vals[i] - carry;
                 carry = 0;
             } else {
-                cur->vals[i] = (cur->vals[i] + mod - carry) % mod;
+                current->vals[i] = (a->vals[i] + mod - carry) % mod;
                 carry = 1;
             }
         }
-        if (other) other = other->next;
-        cur = cur->next;
+        if (b) b = b->next;
+        a = a->next;
     }
     
-    return _nm_normalize(res);
+    for (; a; a = a->next) {
+        num *current = _nm_alloc();
+        if (!current) { return nm_free(result); }
+        if (last) { last->next = current; } else { result = current; }
+        last = current;
+        
+        for (int i = 0; i < cnt; ++i) {
+            current->vals[i] = a->vals[i];
+        }
+    }
+    
+    return _nm_normalize(result);
 }
 
 
@@ -202,52 +216,49 @@ static num *_nm_unshift(num *nm) {
     return _nm_normalize(nm);
 }
 
-static num *_nm_mult_one(num *res, num *a, unsigned  b) {
-    if (!a || !b) { return nm_free(res); }
+static num *_nm_mult_one(num *a, unsigned  b) {
+    if (!a || !b) { return NULL; }
     
     unsigned long mult = 0;
-    num *cur = res;
+    num *result = NULL;
     num *last = NULL;
     while (a || mult) {
-        if (!cur) {
-            cur = _nm_alloc();
-            if (!cur) { return nm_free(res); }
-            if (last) { last->next = cur; } else { res = cur; }
-        }
+        num *current = _nm_alloc();
+        if (!current) { return nm_free(result); }
+        if (last) { last->next = current; } else { result = current; }
+        last = current;
+
         for (int i = 0; i < cnt; ++i) {
             if (a) { mult += a->vals[i] * (unsigned long) b; }
-            cur->vals[i] = mult % mod;
+            current->vals[i] = mult % mod;
             mult /= mod;
         }
         if (a) { a = a->next; }
-        last = cur;
-        cur = cur->next;
     }
-    if (cur) {
-        nm_free(cur);
-        if (last) { last->next = NULL; } else { res = NULL; }
-    }
-    return res;
+    
+    return result;
 }
 
 
 num *nm_mult(num *a, num *b) {
     if (!a || !b) return NULL;
-    num *res = NULL;
-    num *shifted = nm_add(NULL, a);
-    num *tmp = NULL;
+    
+    num *result = NULL;
+    num *shifted = nm_add(a, NULL);
     for (; b; b = b->next) {
         for (int i = 0; i < cnt; ++i) {
             if (b->vals[i]) {
-                tmp = _nm_mult_one(tmp, shifted, b->vals[i]);
-                res = nm_add(res, tmp);
+                num *tmp1 = _nm_mult_one(shifted, b->vals[i]);
+                num *tmp2 = nm_add(result, tmp1);
+                nm_free(tmp1);
+                nm_free(result);
+                result = tmp2;
             }
             shifted = _nm_shift(shifted);
         }
     }
-    nm_free(tmp);
     nm_free(shifted);
-    return res;
+    return result;
 }
 
 
@@ -308,44 +319,47 @@ num *nm_div(num *a, num *b, num **modulus) {
     if (!b) { printf("division by 0\n"); return NULL; }
     if (!a) { return NULL; }
     
-    num *rest = nm_add(NULL, a);
-    num *res = NULL;
+    num *rest = nm_add(a, NULL);
+    num *result = NULL;
     
     if (nm_leq(b, rest)) {
-        num *rest_shifted = nm_add(NULL, b);
-        num *res_shifted = nm_create(1);
-        num *tmp = NULL;
+        num *rest_shifted = nm_add(b, NULL);
+        num *result_shifted = nm_create(1);
         while (nm_leq(rest_shifted, rest)) {
             rest_shifted = _nm_shift(rest_shifted);
-            res_shifted = _nm_shift(res_shifted);
+            result_shifted = _nm_shift(result_shifted);
         }
         while (nm_leq(b, rest)) {
             while (!nm_leq(rest_shifted, rest)) {
                 rest_shifted = _nm_unshift(rest_shifted);
-                res_shifted = _nm_unshift(res_shifted);
+                result_shifted = _nm_unshift(result_shifted);
             }
             unsigned factor = _nm_factor(rest, rest_shifted);
             if (!factor) {
                 printf("factor error\n");
-                nm_free(res_shifted);
+                nm_free(result_shifted);
                 nm_free(rest_shifted);
-                nm_free(tmp);
-                nm_free(res);
+                nm_free(result);
                 nm_free(rest);
                 return NULL;
             }
-            tmp = _nm_mult_one(tmp, rest_shifted, factor);
-            rest = nm_sub(rest, tmp);
-            tmp = _nm_mult_one(tmp, res_shifted, factor);
-            res = nm_add(res, tmp);
+            num *tmp1 = _nm_mult_one(rest_shifted, factor);
+            num *tmp2 = nm_sub(rest, tmp1);
+            nm_free(tmp1);
+            nm_free(rest);
+            rest = tmp2;
+            tmp1 = _nm_mult_one(result_shifted, factor);
+            tmp2 = nm_add(result, tmp1);
+            nm_free(tmp1);
+            nm_free(result);
+            result = tmp2;
         }
-        nm_free(tmp);
-        nm_free(res_shifted);
+        nm_free(result_shifted);
         nm_free(rest_shifted);
     }
     
     if (modulus) { *modulus = rest; } else { nm_free(rest); }
-    return res;
+    return result;
 }
 
 
