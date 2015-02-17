@@ -1,6 +1,7 @@
 #include "frac.h"
 
 #include <limits.h>
+#include <stdlib.h>
 
 struct frac {
     num *n;
@@ -10,13 +11,13 @@ struct frac {
 
 void fr_put(FILE *out, frac *fr) {
     if (!fr) {
-        fprintf(out, "0")
+        fprintf(out, "0");
     } else {
-        if (neg) fprintf(out, "-");
+        if (fr->neg) fprintf(out, "-");
         nm_put(out, fr->n);
         if (!nm_eq_1(fr->d)) {
             fprintf(out, "/");
-            nm_put(fr->d);
+            nm_put(out, fr->d);
         }
     }
 }
@@ -36,12 +37,12 @@ frac *fr_create(num *n, num *d, bool negative) {
     num *g = nm_gcd(n, d);
     frac *result = malloc(sizeof(frac));
     if (result) {
-        frac->n = nm_div(n, g, NULL);
-        frac->d = nm_div(d, g, NULL);
-        frac->neg = negative;
+        result->n = nm_div(n, g, NULL);
+        result->d = nm_div(d, g, NULL);
+        result->neg = negative;
     } else puts("out of memory");
     nm_free(g);
-    return frac;
+    return result;
 }
 
 frac *fr_create_simple(long n, unsigned long d) {
@@ -51,14 +52,14 @@ frac *fr_create_simple(long n, unsigned long d) {
     if (n >= 0) {
         nn = nm_create(n);
         neg = false;
-    } else if (d == LONG_MIN_VALUE) {
-        nn = nm_create(LONG_MAX_VALUE + 1);
+    } else if (d == LONG_MIN) {
+        nn = nm_create(LONG_MAX + 1);
         neg = true;
     } else {
         nn = nm_create(-n);
         neg = true;
     }
-    frac *result = fr_create(nn, dd);
+    frac *result = fr_create(nn, dd, neg);
     nm_free(nn);
     nm_free(dd);
     return result;
@@ -90,7 +91,7 @@ frac *fr_add(frac *a, frac *b) {
     num *s = nm_add(aa, bb);
     nm_free(aa);
     nm_free(bb);
-    frac *result = nm_create(s, d, a->neg);
+    frac *result = fr_create(s, d, a->neg);
     nm_free(d);
     nm_free(s);
     return result;
@@ -121,7 +122,7 @@ frac *fr_sub(frac *a, frac *b) {
     num *s = nm_sub(aa, bb);
     nm_free(aa);
     nm_free(bb);
-    frac *result = nm_create(s, d, a->neg);
+    frac *result = fr_create(s, d, a->neg);
     nm_free(d);
     nm_free(s);
     return result;
@@ -133,7 +134,7 @@ frac *fr_mult(frac *a, frac *b) {
     num *n = nm_mult(a->n, b->n);
     num *d = nm_mult(a->d, b->d);
     bool neg = a->neg != b->neg;
-    frac *result = nm_create(n, d, neg);
+    frac *result = fr_create(n, d, neg);
     nm_free(n);
     nm_free(d);
     return result;
@@ -145,11 +146,29 @@ frac *fr_div(frac *a, frac *b) {
     num *n = nm_mult(a->n, b->d);
     num *d = nm_mult(a->d, b->n);
     bool neg = a->neg != b->neg;
-    frac *result = nm_create(n, d, neg);
+    frac *result = fr_create(n, d, neg);
     nm_free(n);
     nm_free(d);
     return result;
 }
 
-    bool fr_eq(frac *a, frac *b);
-    bool fr_leq(frac *a, frac *b);
+bool fr_eq(frac *a, frac *b) {
+    if (a == b) return true;
+    if (!a || !b) return false;
+    return a->neg == b->neg && nm_eq(a->n, b->n) && nm_eq(a->d, b->d);
+}
+
+bool fr_leq(frac *a, frac *b) {
+    if (a == b) return true;
+    if (!a || !b) return !a;
+    if (a->neg && !b->neg) return true;
+    if (!a->neg && b->neg) return false;
+    
+    num *aa = nm_mult(a->n, b->d);
+    num *bb = nm_mult(b->n, a->d);
+    
+    bool result = a->neg ? nm_leq(bb, aa) : nm_leq(aa, bb);
+    nm_free(bb);
+    nm_free(aa);
+    return result;
+}
