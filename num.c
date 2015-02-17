@@ -363,6 +363,24 @@ num *nm_div(num *a, num *b, num **modulus) {
 }
 
 
+#pragma mark - greatest common divisor
+
+num *nm_gcd(num *a, num *b) {
+    a = nm_add(a, NULL);
+    b = nm_add(b, NULL);
+    
+    while (b) {
+        num *m = NULL;
+        num *r = nm_div(a, b, &m);
+        nm_free(r);
+        nm_free(a);
+        a = b;
+        b = m;
+    }
+    return a;
+}
+
+
 #pragma mark - comparison
 
 bool nm_eq(num *a, num *b) {
@@ -372,6 +390,15 @@ bool nm_eq(num *a, num *b) {
         }
     }
     return !a && !b;
+}
+
+bool nm_eq_1(num *n) {
+    if (!n || n->next) return false;
+    if (n->vals[0] != 1) return false;
+    for (int i = 1; i < cnt; ++i) {
+        if (n->vals[i] != 0) return false;
+    }
+    return true;
 }
 
 bool nm_leq(num *a, num *b) {

@@ -171,6 +171,16 @@ static void t_div_simple() {
     nm_free(a);
 }
 
+static void t_gcd_simle() {
+    num *a = nm_create(1234 * 101);
+    num *b = nm_create(1234 * 128);
+    num *g = nm_gcd(a, b);
+    assert_eq_nm(g, "1234");
+    nm_free(g);
+    nm_free(b);
+    nm_free(a);
+}
+
 static int tests = 0;
 
 #define T(t) { ++tests; putchar('.'); t(); }
@@ -197,5 +207,6 @@ int main() {
     T(t_sub_big);
     T(t_mult_simple);
     T(t_div_simple);
+    T(t_gcd_simle);
     printf("\n\ntests: %d\n", tests);
 }
