@@ -139,6 +139,7 @@ static num *_nm_normalize(num *nm) {
 }
 
 num *nm_sub(num *a, num *b) {
+    num *aa = a; num *bb = b;
     unsigned carry = 0;
 
     num *result = NULL;
@@ -147,6 +148,7 @@ num *nm_sub(num *a, num *b) {
     while (carry || b) {
         if (!a) {
             printf("underflow\n");
+            nm_put(stdout, aa); printf(" - "); nm_put(stdout, bb); puts("");
             return nm_free(result);
         }
 
@@ -264,55 +266,21 @@ num *nm_mult(num *a, num *b) {
 
 #pragma mark - division with rest (not inplace)
 
-unsigned _nm_factor1(num *a, num *b) {
-    if (!a || !b) return 0;
-    
-    unsigned a1 = 0, a2 = 0;
-    bool some_a2 = false;
-    
-    for (; a->next && b->next; a = a->next, b = b->next);
-    
-    unsigned factor = 0;
-    if (!a->next && !b->next) {
-        int i = cnt; while (i && !a->vals[i - 1]) --i;
-        int j = cnt; while (j && !b->vals[j - 1]) --j;
-        if (i && j) {
-            factor = a->vals[i - 1]/b->vals[j - 1];
-        }
-    }
-    return factor;
-}
-
-unsigned _nm_factor2(num *a, num *b) {
-    if (!a || !b) return 0;
-    
-    unsigned a2 = 0;
-    bool some_a2 = false;
-    
-    for (; a->next && b->next; a = a->next, b = b->next) {
-        some_a2 = true;
-        a2 = a->vals[cnt - 1];
-    }
-    unsigned factor = 0;
-    if (!a->next && !b->next) {
-        int i = cnt; while (i && !a->vals[i - 1]) --i;
-        int j = cnt; while (j && !b->vals[j - 1]) --j;
-        if (i && j) {
-            if (i > 1) { some_a2 = true; a2 = a->vals[i - 2]; }
-            if (some_a2) {
-                unsigned long aa = ((unsigned long) a->vals[i - 1]) * mod + a2;
-                unsigned long bb = b->vals[j - 1];
-                factor = aa/bb;
-            }
-        }
-    }
-    return factor;
-}
-
 unsigned _nm_factor(num *a, num *b) {
-    unsigned res = _nm_factor1(a, b);
-    if (res) return res;
-    return _nm_factor2(a, b);
+    unsigned min = 1;
+    unsigned max = mod - 1;
+    while (max - min > 1) {
+        unsigned mid = (max + min)/2;
+        num *tmp = _nm_mult_one(b, mid);
+        if (nm_eq(tmp, a)) { nm_free(tmp); return mid; }
+        else if (nm_leq(tmp, a)) {
+            min = mid;
+        } else {
+            max = mid;
+        }
+        nm_free(tmp);
+    }
+    return min;
 }
 
 num *nm_div(num *a, num *b, num **modulus) {
