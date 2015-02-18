@@ -148,7 +148,6 @@ num *nm_sub(num *a, num *b) {
     while (carry || b) {
         if (!a) {
             printf("underflow\n");
-            nm_put(stdout, aa); printf(" - "); nm_put(stdout, bb); puts("");
             return nm_free(result);
         }
 
@@ -206,14 +205,11 @@ static num *_nm_shift(num *nm) {
 }
 
 static num *_nm_unshift(num *nm) {
-    if (!nm) return NULL;
-    num *cur = nm;
-    while (cur) {
+    for (num *cur = nm; cur; cur = cur->next) {
         for (int i = 1; i < cnt; ++i) {
             cur->vals[i - 1] = cur->vals[i];
         }
         cur->vals[cnt - 1] = cur->next ? cur->next->vals[0] : 0;
-        cur = cur->next;
     }
     return _nm_normalize(nm);
 }
@@ -380,4 +376,3 @@ bool nm_leq(num *a, num *b) {
     if (a) return false;
     return isLeq;
 }
-
