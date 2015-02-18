@@ -23,4 +23,6 @@ bool nm_eq(num *a, num *b);
 bool nm_eq_1(num *n);
 bool nm_leq(num *a, num *b);
 
+unsigned long nm_digits(num *n);
+
 #endif

@@ -65,6 +65,14 @@ frac *fr_create_simple(long n, unsigned long d) {
     return result;
 }
 
+num *fr_num(frac *fr) {
+    return fr ? fr->n : NULL;
+}
+
+num *fr_denom(frac *fr) {
+    return fr ? fr->d : NULL;
+}
+
 frac *fr_neg(frac *fr) {
     return fr ? fr_create(fr->n, fr->d, !fr->neg) : NULL;
 }

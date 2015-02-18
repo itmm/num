@@ -376,3 +376,17 @@ bool nm_leq(num *a, num *b) {
     if (a) return false;
     return isLeq;
 }
+
+unsigned long nm_digits(num *n) {
+    if (!n) return 1;
+    
+    unsigned long digits = 0;
+    for (; n->next; n = n->next) { digits += cnt * 9; }
+    int j = cnt - 1;
+    for (; j && !n->vals[j]; --j);
+    digits += 9 * j;
+    unsigned v = n->vals[j];
+    for (; v; v /= 10) ++digits;
+    return digits;
+}
+

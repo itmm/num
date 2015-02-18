@@ -11,6 +11,9 @@
     frac *fr_create(num *n, num *d, bool negative);
     frac *fr_create_simple(long n, unsigned long d);
 
+    num *fr_num(frac *fr);
+    num *fr_denom(frac *fr);
+
     frac *fr_neg(frac *fr);
     frac *fr_inv(frac *fr);
 
